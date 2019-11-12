@@ -1,1 +1,1 @@
-import dirty_test_script as inputManager
+import dirty_test_script as main
