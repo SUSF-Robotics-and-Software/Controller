@@ -1,6 +1,0 @@
-{
-	"input1":{"ackerman":"curvature","turret":"velocity"},
-	"input2":{"move_arm":"velocity"},
-	"input3":{"move_arm":"direction"}
-
-}

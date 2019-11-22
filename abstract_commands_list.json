@@ -1,0 +1,6 @@
+{
+  "forward": ["loco_command","single_value_data"],
+  "backward": ["loco_command","single_value_data"],
+  "up" : ["arm_command","single_value_data"],
+  "down" : ["arm_command","single_value_data"]
+}

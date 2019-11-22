@@ -1,9 +1,12 @@
-import json
-import constructor
+import abstract_class_definitions
+from V3.abstract_commands import command_data, create_command, set_type
+from sample_command import *
+from abstract_commands import *
 
 
 class InputDevice:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.bindings = {}  # dict linking controls to inputs
         self.values = {}
 
@@ -25,39 +28,62 @@ class InputDevice:
         with open(profile_name + ".json", "w") as JSON_FILE:
             JSON_FILE.write(json.dumps(self.bindings, indent=4, sort_keys=True))
 
+    def get_inputs(self):
+        return self.bindings.keys()
+
+#class Controller(InputDevice):TODO: input source
+    #def get_values(self):
+       # self.values = DEVICE INPUT
+
 
 class InputManager():
     def __init__(self):
-        self.constructor = constructor.CommandCreator()
-        self.constructor.create_class_source(command_primative)
         self.command_objs = {}
         self.input_devices = []
         self.command_state = None
+        with open("abstract_commands_list.json", "r") as FILE:
+            self.cmd_types = json.loads(FILE.read())
+
+    def assign_device(self, device):
+        self.input_devices.append(device)
 
     def output_commands(self):  # creates command objects from all inputs from all connected devices
-        self.command_objs = {}
+        self.command_objs = []
         for device in self.input_devices:
-            for bind_name, bind_commands in device.bindings.items():
-                for command_name, command_parm in bind_commands.items():
-                    self.command_objs[command_name] = self.constructor.construct(command_name)
-                    setattr(self.command_objs[command_name], command_parm, device.values[bind_name])
+            for bind_name, bind_command in device.bindings.items():
+                cmd_data = command_data(bind_command, self.cmd_types[bind_command])
+                self.command_objs.append(create_command(cmd_data))
+                self.command_objs[-1].set_value(device.values[bind_name])
         return self.command_objs
 
-    def create_output_string(self):  # creates a command set from all command objects
-        self.command_state = command_set(self.command_objs) # from richard's commands
-        return self.command_state.get_json()
+    def output_command_sets(self):
+        command_set_dict = {}
+        for type in set_type.__subclasses__():
+            command_set_dict[type.__name__] = []
+
+        for command in self.command_objs:
+            for type in set_type.__subclasses__():
+                if isinstance(command, type):
+                    command_set_dict[type.__name__].append(command)
+
+        command_sets = []
+        for key in command_set_dict:
+            values = command_set_dict[key]
+            command_sets.append(command_set(name=key, *values))
+
+        return command_sets
 
 
-"""
-class controller(InputDevice):
-    def get_values(self):
-        events = get_gamepad()
-        for event in events:
-            if event.code != "SYN_REPORT":
-                self.values[event.code] = event.value
+device = InputDevice("device1")
+device.populate_bindings_from_JSON("binding_profile")
+inpMan = InputManager()
+inpMan.assign_device(device)
+device.values["input1"] = 1
+device.values["input2"] = 2
+device.values["input3"] = 3
+device.values["input4"] = 4
+print(inpMan.output_commands())
+for cmd in inpMan.output_commands():
+    print(cmd.name, cmd.get_value())
 
-class keyboard(InputDecive):
-    def get_values(self):
-        # HOWEVER YO GET KEYBOARD DATA
-"""
-
+print(inpMan.output_command_sets())
