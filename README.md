@@ -5,4 +5,4 @@ InputManagment contains input device definitions and the structure which holds a
 
 abstract_commands contains the methods and classes which create abstract commands from the JSON
 
-#Nothing is commented yet so bear with me :)
+# Nothing is commented yet so bear with me :)
