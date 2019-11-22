@@ -3,4 +3,6 @@ Human input to command state
 
 InputManagment contains input device definitions and the structure which holds and interprets them
 
-Constructor contains a class which will convert names of classes into actual classes
+abstract_commands contains the methods and classes which create abstract commands from the JSON
+
+#Nothing is commented yet so bear with me :)
