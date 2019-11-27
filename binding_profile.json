@@ -1,6 +1,9 @@
-{
-    "input1": "forward",
-    "input2": "backward",
-    "input3": "up",
-    "input4": "down"
-}
+[
+    {
+        // <input> : <abstract_command>
+    },
+    {
+        // <input> : [<nomalisation divisor>,<deadzone>]
+    }
+]
+

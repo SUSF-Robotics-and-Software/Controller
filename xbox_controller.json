@@ -1,0 +1,17 @@
+[
+    {
+        "ABS_Y": "forward",
+        "ABS_X": "sideways",
+        "ABS_RX" : "turn",
+        "BTN_TL" : "change_drivemode_flag"
+    },
+    {
+        "ABS_Y" : [32768, 0.2],"ABS_X": [32768,0.2], "ABS_Z": [256,0], "BTN_THUMBL": [1,0],
+        "BTN_TL": [1,0], "BTN_TR": [1,0],
+        "ABS_HAT0X": [1,0], "ABS_HAT0Y": [1,0],
+        "BTN_START": [1,1], "BTN_SELECT": [1,1],
+        "ABS_RY": [32768,0.1], "ABS_RX": [32768,0.1], "ABS_RZ": [256,0.1], "BTN_THUMBR": [1,0],
+        "BTN_WEST": [1,0], "BTN_SOUTH": [1,0], "BTN_EAST": [1,0], "BTN_NORTH": [1,0]
+    }
+]
+

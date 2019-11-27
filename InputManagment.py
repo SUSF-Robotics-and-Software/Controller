@@ -1,7 +1,5 @@
-import abstract_class_definitions
-from V3.abstract_commands import command_data, create_command, set_type
-from sample_command import *
 from abstract_commands import *
+from generic_command_classes import *
 
 
 class InputDevice:
@@ -22,7 +20,9 @@ class InputDevice:
     def populate_bindings_from_JSON(self, profile_name):
         with open(profile_name + ".json", "r") as JSON_FILE:
             json_data = JSON_FILE.read()
-            self.bindings = json.loads(json_data)
+            json_data = json.loads(json_data)
+            self.bindings = json_data[0]
+            self.control_proporties = json_data[1]
 
     def save_bindings(self, profile_name):
         with open(profile_name + ".json", "w") as JSON_FILE:
@@ -31,9 +31,29 @@ class InputDevice:
     def get_inputs(self):
         return self.bindings.keys()
 
-#class Controller(InputDevice):TODO: input source
-    #def get_values(self):
-       # self.values = DEVICE INPUT
+
+class Controller(InputDevice):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def get_values(self):
+        # self.values = DEVICE INPUT
+        self.values["ABS_Y"] = 2000
+        self.values["ABS_X"] = 10000
+        self.values["ABS_RX"] = -4673
+        self.values["BTN_TL"] = 1
+        self.check_tolerances()
+        self.normalise()
+
+    def check_tolerances(self):
+        for input in self.control_proporties:
+            if abs(self.value[input]) < self.control_proporties[input][1]:
+                self.values[input] = 0
+                print("deadzone")
+
+    def normalise(self):
+        for input in self.control_proporties:
+            self.values[input] = self.values[input] / self.control_proporties[input][0]
 
 
 class InputManager():
@@ -47,24 +67,29 @@ class InputManager():
     def assign_device(self, device):
         self.input_devices.append(device)
 
+    def update_devices(self):
+        for device in self.input_devices:
+            device.get_values()
+
     def output_commands(self):  # creates command objects from all inputs from all connected devices
         self.command_objs = []
         for device in self.input_devices:
             for bind_name, bind_command in device.bindings.items():
-                cmd_data = command_data(bind_command, self.cmd_types[bind_command])
+                cmd_data = command_data(bind_command, self.cmd_types[bind_command][0], self.cmd_types[bind_command][1],
+                                        self.cmd_types[bind_command][2:])  # construct command data
                 self.command_objs.append(create_command(cmd_data))
-                self.command_objs[-1].set_value(device.values[bind_name])
+                self.command_objs[-1].value = device.values[bind_name]
         return self.command_objs
 
     def output_command_sets(self):
         command_set_dict = {}
-        for type in set_type.__subclasses__():
-            command_set_dict[type.__name__] = []
+        for typ in set_type.__subclasses__():
+            command_set_dict[typ.__name__] = []
 
         for command in self.command_objs:
-            for type in set_type.__subclasses__():
-                if isinstance(command, type):
-                    command_set_dict[type.__name__].append(command)
+            for typ in set_type.__subclasses__():
+                if isinstance(command, typ):
+                    command_set_dict[typ.__name__].append(command)
 
         command_sets = []
         for key in command_set_dict:
@@ -74,16 +99,11 @@ class InputManager():
         return command_sets
 
 
-device = InputDevice("device1")
-device.populate_bindings_from_JSON("binding_profile")
+device = Controller("device1")
+device.populate_bindings_from_JSON("xbox_controller")
 inpMan = InputManager()
 inpMan.assign_device(device)
-device.values["input1"] = 1
-device.values["input2"] = 2
-device.values["input3"] = 3
-device.values["input4"] = 4
-print(inpMan.output_commands())
-for cmd in inpMan.output_commands():
-    print(cmd.name, cmd.get_value())
+inpMan.update_devices()
+inpMan.output_commands()
 
 print(inpMan.output_command_sets())
