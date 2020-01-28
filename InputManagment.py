@@ -21,7 +21,7 @@ class InputDevice:
         self.bindings[bind] = {}
 
     def populate_bindings_from_JSON(self, profile_name):
-        os.chdir(".\\InputManager")
+        #os.chdir(".\\InputManager")
         with open(profile_name + ".json", "r") as JSON_FILE:
             json_data = JSON_FILE.read()
             json_data = json.loads(json_data)
@@ -80,18 +80,18 @@ class InputManager():
             self.device_threads.append(threading.Thread(target=device.get_values))
             self.device_threads[-1].start()
 
-    def output_commands(self):  # creates command objects from all inputs from all connected devices
+    def create_commands(self):  # creates command objects from all inputs from all connected devices
         self.command_objs = []
         for device in self.input_devices:
-            for bind_name, bind_command in device.bindings.items():
+            for bind_command, bind_name in device.bindings.items():
                 cmd_data = command_data(bind_command, self.cmd_types[bind_command][0], self.cmd_types[bind_command][1],
                                         self.cmd_types[bind_command][2:])  # construct command data
                 self.command_objs.append(create_command(cmd_data))
-                self.command_objs[-1].value = device.values[bind_name]
         return self.command_objs
 
-    def output_command_sets(self):
+    def create_command_sets(self):
         command_set_dict = {}
+        self.command_sets = []
         for typ in set_type.__subclasses__():
             command_set_dict[typ.__name__] = []
 
@@ -100,27 +100,39 @@ class InputManager():
                 if isinstance(command, typ):
                     command_set_dict[typ.__name__].append(command)
 
-        command_sets = []
         for key in command_set_dict:
             values = command_set_dict[key]
-            command_sets.append(command_set(name=key, *values))
+            self.command_sets.append(command_set(name=key, *values))
 
-        return command_sets
+        return self.command_sets
+
+    def update_commands(self):
+        for command_set in self.command_sets:
+            for command_name in command_set._command_names_in_set:
+                command_set[command_name].value = device.values[device.bindings[command_name]] #device.values[get_value_from_key(device.bindings,command_name)]
 
     def output_loop(self):
-        update_time = 1.0
+        update_time = 5.0
         output_thread = threading.Timer(update_time, self.output_loop)
         output_thread.start()
-        self.output_commands()
-        print(self.output_command_sets())
+        self.update_commands()
+        print(self.command_sets[0].get_json()) #replaced with client.send (ish...)
 
-
+def get_value_from_key(dict,value_to_find):
+    for key in dict:
+        if dict[key] == value_to_find:
+            return key
 
 device = Controller("device1")
 device.populate_bindings_from_JSON("xbox_controller")
 inpMan = InputManager()
 inpMan.assign_device(device)
 
+print(device.values)
+inpMan.create_commands()
+print(inpMan.create_command_sets())
+inpMan.update_devices()
+inpMan.update_commands()
 
 inpMan.update_devices()
 
