@@ -1,5 +1,8 @@
 from abstract_commands import *
 from generic_command_classes import *
+import inputs
+import os
+import threading
 
 
 class InputDevice:
@@ -18,11 +21,13 @@ class InputDevice:
         self.bindings[bind] = {}
 
     def populate_bindings_from_JSON(self, profile_name):
+        os.chdir(".\\InputManager")
         with open(profile_name + ".json", "r") as JSON_FILE:
             json_data = JSON_FILE.read()
             json_data = json.loads(json_data)
             self.bindings = json_data[0]
             self.control_proporties = json_data[1]
+            self.init_values()
 
     def save_bindings(self, profile_name):
         with open(profile_name + ".json", "w") as JSON_FILE:
@@ -31,30 +36,32 @@ class InputDevice:
     def get_inputs(self):
         return self.bindings.keys()
 
+    def init_values(self):
+        for key in self.control_proporties:
+            self.values[key] = 0;
+
 
 class Controller(InputDevice):
     def __init__(self, name):
         super().__init__(name)
 
+
     def get_values(self):
         # self.values = DEVICE INPUT
-        self.values["ABS_Y"] = 2000
-        self.values["ABS_X"] = 10000
-        self.values["ABS_RX"] = -4673
-        self.values["BTN_TL"] = 1
-        self.check_tolerances()
-        self.normalise()
+        while(True):
+            events = inputs.get_gamepad()
+            for event in events:
+                if event.code != "SYN_REPORT":
+                    self.values[event.code] = event.state
+                    self.normalise(event.code)
+                    self.check_tolerances(event.code)
 
-    def check_tolerances(self):
-        for input in self.control_proporties:
-            if abs(self.value[input]) < self.control_proporties[input][1]:
-                self.values[input] = 0
-                print("deadzone")
+    def check_tolerances(self,input):
+        if abs(self.values[input]) < self.control_proporties[input][1]:
+            self.values[input] = 0
 
-    def normalise(self):
-        for input in self.control_proporties:
-            self.values[input] = self.values[input] / self.control_proporties[input][0]
-
+    def normalise(self,input):
+        self.values[input] = self.values[input] / self.control_proporties[input][0]
 
 class InputManager():
     def __init__(self):
@@ -68,8 +75,10 @@ class InputManager():
         self.input_devices.append(device)
 
     def update_devices(self):
+        self.device_threads = []
         for device in self.input_devices:
-            device.get_values()
+            self.device_threads.append(threading.Thread(target=device.get_values))
+            self.device_threads[-1].start()
 
     def output_commands(self):  # creates command objects from all inputs from all connected devices
         self.command_objs = []
@@ -98,12 +107,23 @@ class InputManager():
 
         return command_sets
 
+    def output_loop(self):
+        update_time = 1.0
+        output_thread = threading.Timer(update_time, self.output_loop)
+        output_thread.start()
+        self.output_commands()
+        print(self.output_command_sets())
+
+
 
 device = Controller("device1")
 device.populate_bindings_from_JSON("xbox_controller")
 inpMan = InputManager()
 inpMan.assign_device(device)
-inpMan.update_devices()
-inpMan.output_commands()
 
-print(inpMan.output_command_sets())
+
+inpMan.update_devices()
+
+inpMan.output_loop()
+
+
